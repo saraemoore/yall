@@ -1,0 +1,18 @@
+Package: yall
+Title: Yet Another Local Learner (YALL)
+Version: 0.1.0
+Date: 2023-11-03
+Authors@R: 
+    person(given = "Sara",
+           family = "Moore",
+           role = c("aut", "cre"),
+           email = "sara@saraemoore.com",
+           comment = c(ORCID = "0000-0001-7996-8003"))
+Description: A localized machine learning algorithm using Cross-Validated SuperLearner.
+Imports:
+    dplyr,
+    magrittr
+License: GPL-3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.3
