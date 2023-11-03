@@ -1,0 +1,37 @@
+---
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%",
+  warning = FALSE,
+  message = FALSE
+)
+options(repos = c(RSPM = "https://packagemanager.posit.co/cran/latest",
+				  CRAN = "https://cloud.r-project.org/"),
+		install.packages.check.source = "no")
+```
+
+# Yet Another Local Learner (YALL)
+
+<!-- badges: start -->
+[![R-CMD-check](https://github.com/saraemoore/yall/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/saraemoore/yall/actions/workflows/R-CMD-check.yaml)
+<!-- badges: end -->
+
+## Overview
+
+The `yall` package implements a local learning algorithm, building upon the ensemble learner Cross-Validated [SuperLearner](https://github.com/ecpolley/SuperLearner) (`SuperLearner::CV.SuperLearner()`).
+
+## Installation
+
+The `yall` package is currently only available via GitHub. To install:
+
+```{r install_pkg, results='hide'}
+remotes::install_github("saraemoore/yall")
+```
+
+## Examples
