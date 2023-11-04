@@ -12,9 +12,15 @@ Description: A localized machine learning algorithm using Cross-Validated SuperL
 Imports:
     dplyr,
     magrittr,
+    purrr,
+    kedd,
+    scales,
+    SuperSelector,
     cvAUC,
     ROCR,
     yardstick
+Remotes:
+    saraemoore/SuperSelector
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
