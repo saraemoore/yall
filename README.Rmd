@@ -142,6 +142,7 @@ predall_test = predictAllYALL(newX = X_holdout,
 
 ```{r}
 # Test set: Global feature selection by screening algorithm
+#   (via SuperSelector package)
 cvSLVarImpPlot2(summarizeScreen(predall_test$screen,
                                 groupCols = c("method", "screener")),
                 subtitle = "Test set",
@@ -150,6 +151,7 @@ cvSLVarImpPlot2(summarizeScreen(predall_test$screen,
 
 ```{r}
 # Test set: Global feature selection across all screening algorithms
+#   (via SuperSelector package)
 cvSLVarImpPlot(summarizeScreen(predall_test$screen,
                                groupCols = "method"),
                labelVals = FALSE,
@@ -201,9 +203,5 @@ local_coef <- tbl_regression(local_mod, exponentiate = TRUE, intercept = TRUE) %
                   modify_column_hide(columns = p.value) %>%
                   modify_column_unhide(columns = std.error)
 
-as_kable_extra(local_coef,
-               # format = "latex",
-               # booktabs = TRUE,
-               caption = "Example Local Regression Model Coefficient Estimates") %>%
-  kableExtra::kable_styling(font_size = 11.5)
+as_kable_extra(local_coef)
 ```
