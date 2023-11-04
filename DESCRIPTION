@@ -10,17 +10,20 @@ Authors@R:
            comment = c(ORCID = "0000-0001-7996-8003"))
 Description: A localized machine learning algorithm using Cross-Validated SuperLearner.
 Imports:
+    methods,
     dplyr,
     magrittr,
     purrr,
     kedd,
     scales,
     SuperSelector,
+    SLScreenExtra,
     cvAUC,
     ROCR,
     yardstick
 Remotes:
-    saraemoore/SuperSelector
+    saraemoore/SuperSelector,
+    saraemoore/SLScreenExtra
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
