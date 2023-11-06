@@ -39,7 +39,7 @@ remotes::install_github("saraemoore/yall")
 ```{r}
 library(yall)
 library(SuperSelector)  # sim_proppr_data, factor_to_indicator
-library(purrr)          # cross_df
+library(tidyr)          # expand_grid
 library(dplyr)          # %>%, slice_min, select, left_join, arrange
 library(caret)          # createDataPartition
 library(origami)        # make_folds, cross_validate
@@ -54,17 +54,17 @@ libraryCVSLFeatSel <- list(
     `splines biggest diff glm` = c("SL.glm", "screen.earth.backwardprune")
 )
 
-libraryMetaFeatSel = data.frame(selector = c("cutoff.biggest.diff", "cutoff.k", "cutoff.k"),
-                                k = c(NA, 3, 6),
-                                stringsAsFactors = FALSE)
-rownames(libraryMetaFeatSel) = c("biggest diff", "top3", "top6")
+libraryMetaFeatSel <- data.frame(selector = c("cutoff.biggest.diff", "cutoff.k", "cutoff.k"),
+                                 k = c(NA, 3, 6),
+                                 stringsAsFactors = FALSE)
+rownames(libraryMetaFeatSel) <- c("biggest diff", "top3", "top6")
 
-libraryNeighborWeights = purrr::cross_df(list(norm = c("L1", "L2"),
-                                              kernel = c("uniform", "tricube", "epanechnikov"),
-                                              window = c(0.1, 0.2, 0.3))) %>%
-                                         as.data.frame(stringsAsFactors = FALSE)
+libraryNeighborWeights <- tidyr::expand_grid(norm = c("L1", "L2"),
+                                             kernel = c("uniform", "tricube", "epanechnikov"),
+                                             window = c(0.1, 0.2, 0.3)) %>%
+                            as.data.frame(stringsAsFactors = FALSE)
 
-librarySimplePred = list(
+librarySimplePred <- list(
   c("SL.glm.mean", "All"),
   c("SL.glm", "screen.corRank3.wgtd"),
   c("SL.glm.interaction", "screen.corRank3.wgtd"),
@@ -72,9 +72,9 @@ librarySimplePred = list(
   c("SL.glm.interaction", "screen.corRank6.wgtd")
 )
 
-methodCVSLFeatSel = c("method.NNloglik", "method.NNLS")
+methodCVSLFeatSel <- c("method.NNloglik", "method.NNLS")
 
-nCVSLFeatSelFolds = 5
+nCVSLFeatSelFolds <- 5
 
 family <- binomial()
 
@@ -100,21 +100,29 @@ X_tuning <- X_full[-holdoutIdx,]
 Y_tuning <- Y_full[-holdoutIdx]
 
 # within the tuning set, make CV folds
-nFolds = 5
-cvFoldInfo = origami::make_folds(X_tuning, V = nFolds)
+nFolds <- 5
+cvFoldInfo <- origami::make_folds(X_tuning, V = nFolds)
 
 plan(sequential)
 
-predres <- origami::cross_validate(trainYALL, cvFoldInfo, y_all = Y_tuning, x_all = X_tuning, family = family,
+predres <- origami::cross_validate(
+  cv_fun = trainYALL,
+  folds = cvFoldInfo,
+  y_all = Y_tuning,
+  x_all = X_tuning,
+  family = family,
   cvSLfeatsel_control = list(SL.library = libraryCVSLFeatSel, method = methodCVSLFeatSel,
-                 selector.library = libraryMetaFeatSel, nFolds = nCVSLFeatSelFolds),
+                             selector.library = libraryMetaFeatSel, nFolds = nCVSLFeatSelFolds),
   neighbor_control = list(library = libraryNeighborWeights),
   predict_control = list(SL.library = librarySimplePred, trimLogit = 0.001),
   save_dist = FALSE,
-  model_keep = c("print"),
-  future.packages = c("SLScreenExtra"), # does SuperSelector need to be added here?
+  # cross_validate() uses future by default to process each fold in parallel.
+  #   future.packages specifies which packages to attach in the environment within each fold.
+  future.packages = c("SLScreenExtra"),
+  # .combine_control tells cross_validate() how to combine list elements from each fold's results
   .combine_control = list(combiners = list(predict = combiner_rbind, screen = combiner_rbind,
-                       screen_full = combiner_c, screen_which = combiner_rbind)))
+                          screen_full = combiner_c, screen_which = combiner_rbind))
+  )
 
 # one row per unique combo of tuning parameter settings
 predSummary <- summarizeYALL(predres$predict)
@@ -131,47 +139,48 @@ best_res <- best_res_row %>%
 best_res$Yobs <- Y_tuning
 best_res
 
-predall_test = predictAllYALL(newX = X_holdout,
-                y_all = Y_tuning,
-                x_all = X_tuning,
-                family = family,
-                predSummaryRow = best_res_row,
-                libraryCVSLFeatSel = libraryCVSLFeatSel,
-                nCVSLFeatSelFolds = nCVSLFeatSelFolds)
+# use the optimal parameters selected using the tuning set to predict outcomes in the validation set
+predall_holdout <- predictAllYALL(newX = X_holdout,
+                                  y_all = Y_tuning,
+                                  x_all = X_tuning,
+                                  family = family,
+                                  predSummaryRow = best_res_row,
+                                  libraryCVSLFeatSel = libraryCVSLFeatSel,
+                                  nCVSLFeatSelFolds = nCVSLFeatSelFolds)
 ```
 
 ```{r}
-# Test set: Global feature selection by screening algorithm
+# Validation set: Global feature selection by screening algorithm
 #   (via SuperSelector package)
-cvSLVarImpPlot2(summarizeScreen(predall_test$screen,
+cvSLVarImpPlot2(summarizeScreen(predall_holdout$screen,
                                 groupCols = c("method", "screener")),
-                subtitle = "Test set",
-                y_breaks = seq(from = 0, to = 1, length.out = max(predall_test$screen$fold) + 1))
+                subtitle = "Holdout set",
+                y_breaks = seq(from = 0, to = 1, length.out = max(predall_holdout$screen$fold) + 1))
 ```
 
 ```{r}
-# Test set: Global feature selection across all screening algorithms
+# Validation set: Global feature selection across all screening algorithms
 #   (via SuperSelector package)
-cvSLVarImpPlot(summarizeScreen(predall_test$screen,
+cvSLVarImpPlot(summarizeScreen(predall_holdout$screen,
                                groupCols = "method"),
                labelVals = FALSE,
-               subtitle = "Test set",
+               subtitle = "Holdout set",
                addSummary = FALSE,
-               x_breaks = seq(from = 0, to = 1, length.out = max(predall_test$screen$fold) + 1))
+               x_breaks = seq(from = 0, to = 1, length.out = max(predall_holdout$screen$fold) + 1))
 ```
 
 ```{r}
-# tidy(predall_test$predict$fitLibrary[[1]])
-# predall_test$predict$kernel_weights[[30]] %>% as.vector()
-# unname(predall_test$predict$library.predict) - Y_holdout
+# tidy(predall_holdout$predict$fitLibrary[[1]])
+# predall_holdout$predict$kernel_weights[[30]] %>% as.vector()
+# unname(predall_holdout$predict$library.predict) - Y_holdout
 
-ll_assessed <- assess_predictions(predall_test$predict$library.predict,
+ll_assessed <- assess_predictions(predall_holdout$predict$library.predict,
                                   Y_holdout,
-                                  "'Local' learner predictions (test set)")
+                                  "'Local' learner predictions (holdout set)")
 ```
 
 ```{r}
-# Test set: Receiver operating characteristic curve
+# Validation set: Receiver operating characteristic curve
 
 library(ggplot2)
 
@@ -188,14 +197,14 @@ ggplot(data = ll_assessed$roc, aes(x = fpr, y = tpr)) +
 ```
 
 ```{r}
-# Test set: Example Local Regression Model Coefficient Estimates for a single observation
+# Validation set: Example Local Regression Model Coefficient Estimates for a single observation
 
 library(gtsummary)
 library(kableExtra)
 
-test_obs_num <- 186
-local_mod <- predall_test$predict %>%
-                filter(obsNum==as.character(test_obs_num)) %>%
+holdout_obs_num <- 186
+local_mod <- predall_holdout$predict %>%
+                filter(obsNum==as.character(holdout_obs_num)) %>%
                 pull(fitLibrary) %>%
                 `[[`(1)
 

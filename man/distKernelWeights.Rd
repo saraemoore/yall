@@ -2,7 +2,7 @@
 % Please edit documentation in R/kernel_weights.R
 \name{distKernelWeights}
 \alias{distKernelWeights}
-\title{Short description}
+\title{Estimate distances in "neighborhoods" using specified features}
 \usage{
 distKernelWeights(
   keepX,
@@ -31,15 +31,30 @@ options). Column "kernel" should contain valid kernel function names (see the
 "window" should contain valid window sizes (see the \code{windowProp}
 argument of \code{\link{scaleRowDists}} for details).}
 
-\item{save_dist}{A boolean indicating whether to retain the distance values
-in the result. Defaults to \code{FALSE}.}
+\item{save_dist}{A boolean indicating whether to retain the raw distance
+matrices in the resulting \code{data.frame} in an additional (list) column
+named "dist". Defaults to \code{FALSE}.}
 
 \item{verbose}{A boolean indicating whether diagnostic messages should be
 printed. Defaults to \code{FALSE}.}
 }
 \value{
-A \code{data.frame}
+The \code{neighbor_library} \code{data.frame} supplemented with at
+least two columns: "windowFmtd" (a formatted string version of the supplied
+column "window") and "kernel_weights". Each row's "kernel_weights" contains a
+sparse matrix of distances with number of rows equal to the number of rows in
+\code{testX} and the number of and number of columns equal to the number of
+rows in \code{trainX}.
 }
 \description{
-Short description
+Estimate distances in "neighborhoods" using specified features
+}
+\examples{
+neighbor_lib <- tidyr::expand_grid(norm = c("L1", "L2"),
+                                   kernel = c("uniform", "tricube", "epanechnikov"),
+                                   window = c(0.1, 0.2, 0.3))
+res <- distKernelWeights(keepX = c("qsec", "cyl", "disp", "mpg", "carb", "drat", "hp", "wt"),
+                         trainX = mtcars[1:28, -which(colnames(mtcars) \%in\% "vs")],
+                         testX = mtcars[29:32, -which(colnames(mtcars) \%in\% "vs")],
+                         neighbor_library = neighbor_lib)
 }

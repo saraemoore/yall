@@ -105,7 +105,7 @@ weightNeighbors = function(scaledDist, kernelFunction, verbose = FALSE) {
     # kernelResInv = 1/kernelRes[(kernelRes > 0)]
 }
 
-#' Short description
+#' Estimate distances in "neighborhoods" using specified features
 #' 
 #' @param keepX Character vector containing names of retained features.
 #' @param trainX A \code{data.frame} (typically containing the training/tuning
@@ -120,16 +120,31 @@ weightNeighbors = function(scaledDist, kernelFunction, verbose = FALSE) {
 #' \code{kernel} argument of \code{\link[kedd]{kernel.fun}} for options). Column
 #' "window" should contain valid window sizes (see the \code{windowProp}
 #' argument of \code{\link{scaleRowDists}} for details).
-#' @param save_dist A boolean indicating whether to retain the distance values
-#' in the result. Defaults to \code{FALSE}.
+#' @param save_dist A boolean indicating whether to retain the raw distance
+#' matrices in the resulting \code{data.frame} in an additional (list) column
+#' named "dist". Defaults to \code{FALSE}.
 #' @param verbose A boolean indicating whether diagnostic messages should be
 #' printed. Defaults to \code{FALSE}.
-#' @return A \code{data.frame}
+#' @return The \code{neighbor_library} \code{data.frame} supplemented with at
+#' least two columns: "windowFmtd" (a formatted string version of the supplied
+#' column "window") and "kernel_weights". Each row's "kernel_weights" contains a
+#' sparse matrix of distances with number of rows equal to the number of rows in
+#' \code{testX} and the number of and number of columns equal to the number of
+#' rows in \code{trainX}.
 #' @importFrom dplyr select distinct mutate full_join
 #' @importFrom magrittr `%>%`
 #' @importFrom purrr map map2
 #' @importFrom scales percent
 #' @importFrom methods as
+#' @export
+#' @examples
+#' neighbor_lib <- tidyr::expand_grid(norm = c("L1", "L2"),
+#'                                    kernel = c("uniform", "tricube", "epanechnikov"),
+#'                                    window = c(0.1, 0.2, 0.3))
+#' res <- distKernelWeights(keepX = c("qsec", "cyl", "disp", "mpg", "carb", "drat", "hp", "wt"),
+#'                          trainX = mtcars[1:28, -which(colnames(mtcars) %in% "vs")],
+#'                          testX = mtcars[29:32, -which(colnames(mtcars) %in% "vs")],
+#'                          neighbor_library = neighbor_lib)
 distKernelWeights = function(keepX, trainX, testX, neighbor_library, save_dist = FALSE, verbose = FALSE) {
 
     # step over each unique norm

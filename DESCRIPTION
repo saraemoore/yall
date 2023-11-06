@@ -8,19 +8,26 @@ Authors@R:
            role = c("aut", "cre"),
            email = "sara@saraemoore.com",
            comment = c(ORCID = "0000-0001-7996-8003"))
-Description: A localized machine learning algorithm using Cross-Validated SuperLearner.
+Description: A localized machine learning algorithm inspired by and built on Cross-Validated SuperLearner.
 Imports:
     methods,
     dplyr,
     magrittr,
     purrr,
+    tidyr,
+    tibble,
+    broom,
     kedd,
     scales,
+    SuperLearner,
     SuperSelector,
     SLScreenExtra,
+    origami,
     cvAUC,
     ROCR,
-    yardstick
+    yardstick,
+    future.apply,
+    strip
 Remotes:
     saraemoore/SuperSelector,
     saraemoore/SLScreenExtra
