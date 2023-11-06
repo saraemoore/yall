@@ -318,6 +318,7 @@ predictAllYALL <- function(newX, y_all, x_all, family, predSummaryRow, libraryCV
 #' @return A \code{data.frame} summary
 #' @importFrom dplyr group_by summarize ungroup arrange select
 #' @importFrom magrittr `%>%`
+#' @export
 summarizeYALL <- function(df) {
     # summarize over observations
     df %>%
