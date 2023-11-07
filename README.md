@@ -21,8 +21,7 @@ Installation
 The `yall` package is currently only available via GitHub. To install:
 
 ``` r
-# remotes::install_github("saraemoore/yall")
-devtools::install("~/Documents/yall")
+remotes::install_github("saraemoore/yall")
 ```
 
 Examples

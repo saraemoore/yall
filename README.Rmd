@@ -13,8 +13,7 @@ knitr::opts_chunk$set(
 )
 options(repos = c(RSPM = "https://packagemanager.posit.co/cran/latest",
 				          CRAN = "https://cloud.r-project.org/"),
-        install.packages.check.source = "no",
-        pkgType = "mac.binary")
+        install.packages.check.source = "no")
 ```
 
 # Yet Another Local Learner (YALL)
@@ -32,8 +31,7 @@ The `yall` package implements a local learning algorithm, building upon the ense
 The `yall` package is currently only available via GitHub. To install:
 
 ```{r install_pkg, results='hide'}
-# remotes::install_github("saraemoore/yall")
-devtools::install("~/Documents/yall")
+remotes::install_github("saraemoore/yall")
 ```
 
 ## Examples
