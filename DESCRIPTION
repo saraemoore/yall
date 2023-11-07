@@ -17,7 +17,7 @@ Imports:
     tidyr,
     tibble,
     broom,
-    kedd (<= 1.0.3),
+    kedd,
     scales,
     SuperLearner,
     SuperSelector,
@@ -30,7 +30,8 @@ Imports:
     strip
 Remotes:
     saraemoore/SuperSelector,
-    saraemoore/SLScreenExtra
+    saraemoore/SLScreenExtra,
+    cran/kedd
 License: GPL-3
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
