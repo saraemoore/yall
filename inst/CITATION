@@ -1,0 +1,11 @@
+citHeader("To cite yall in publications use:")
+
+bibentry(
+  key      = "yall",
+  bibtype  = "Manual",
+  title    = "Yet Another Local Learner (YALL): a localized machine learning algorithm using Cross-Validated SuperLearner",
+  author   = c(person("Sara", "Moore")),
+  note     = "R package version 0.1.0",
+  year     = "2023",
+  url      = "https://github.com/saraemoore/yall"
+)

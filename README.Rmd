@@ -1,33 +1,42 @@
+---
+output: github_document
+---
 
-Yet Another Local Learner (YALL)
-================================
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%",
+  warning = FALSE,
+  message = FALSE
+)
+options(repos = c(RSPM = "https://packagemanager.posit.co/cran/latest",
+				          CRAN = "https://cloud.r-project.org/"),
+        install.packages.check.source = "no")
+```
+
+# Yet Another Local Learner (YALL)
 
 <!-- badges: start -->
-
 [![R-CMD-check](https://github.com/saraemoore/yall/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/saraemoore/yall/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-Overview
---------
+## Overview
 
-The `yall` package implements a local learning algorithm, building upon
-the ensemble learner Cross-Validated
-[SuperLearner](https://github.com/ecpolley/SuperLearner)
-(`SuperLearner::CV.SuperLearner()`).
+The `yall` package implements a local learning algorithm, building upon the ensemble learner Cross-Validated [SuperLearner](https://github.com/ecpolley/SuperLearner) (`SuperLearner::CV.SuperLearner()`).
 
-Installation
-------------
+## Installation
 
 The `yall` package is currently only available via GitHub. To install:
 
-``` r
+```{r install_pkg, results='hide'}
 remotes::install_github("saraemoore/yall")
 ```
 
-Examples
---------
+## Examples
 
-``` r
+```{r load_and_set}
 library(yall)
 library(SuperSelector)  # sim_proppr_data, factor_to_indicator
 library(SuperLearner)   # screening and prediction library algorithm functions
@@ -75,7 +84,7 @@ n_obs <- 2000
 set.seed(my_seed)
 ```
 
-``` r
+```{r sim_data}
 proppr_sim <- SuperSelector::sim_proppr_data(n_obs = n_obs, rnd_seed = my_seed)
 
 Y_full <- as.numeric(proppr_sim$Y)
@@ -95,7 +104,7 @@ nFolds <- 5
 cvFoldInfo <- origami::make_folds(X_tuning, V = nFolds)
 ```
 
-``` r
+```{r predict_tuning}
 plan(sequential)
 
 # expect this function to run for several minutes for this simulated dataset,
@@ -121,25 +130,30 @@ predres <- origami::cross_validate(
 )
 ```
 
-``` r
+```{r summarize_tuning1, results='asis'}
 # one row per unique combo of tuning parameter settings
 predSummary <- summarizeYALL(predres$predict)
 # minimum cvRiskSum (note that there may be ties):
 predSummary %>% slice_min(cvRiskSum, with_ties = TRUE) %>% knitr::kable()
 ```
 
-| norm | kernel  | window | screener             | predictor | combo\_method | selector |   k | cvRiskSum |
-|:-----|:--------|-------:|:---------------------|:----------|:--------------|:---------|----:|----------:|
-| L2   | uniform |    0.3 | screen.corRank3.wgtd | SL.glm    | NNloglik      | cutoff.k |   6 |  134.8602 |
-
-``` r
+```{r subset_to_best_combo}
 # subset predictions to only those with the settings which resulted in the min cvRiskSum
 best_res_row <- predSummary %>%
   slice_min(cvRiskSum, with_ties = FALSE) %>%
   select(-cvRiskSum) 
 ```
 
-``` r
+```{r summarize_tuning2, eval=FALSE, include=FALSE}
+best_res <- best_res_row %>%
+  left_join(predres$predict) %>%
+  arrange(obsNum)
+best_res$Yobs <- Y_tuning
+best_res %>% select(obsNum, norm, kernel, window, screener, predictor, combo_method, selector, k, keep_names, windowFmtd, keep2, library.predict, Yobs) %>% head()
+
+```
+
+```{r predict_holdout}
 # use the optimal parameters selected using the tuning set to predict outcomes in the holdout set
 predall_holdout <- predictAllYALL(newX = X_holdout,
                                   y_all = Y_tuning,
@@ -150,7 +164,7 @@ predall_holdout <- predictAllYALL(newX = X_holdout,
                                   nCVSLFeatSelFolds = nCVSLFeatSelFolds)
 ```
 
-``` r
+```{r plot_globalfeatsel1, fig.height=7}
 # Holdout set: Global feature selection by screening algorithm
 #   (via SuperSelector package)
 cvSLVarImpPlot2(summarizeScreen(predall_holdout$screen,
@@ -159,9 +173,7 @@ cvSLVarImpPlot2(summarizeScreen(predall_holdout$screen,
                 y_breaks = seq(from = 0, to = 1, length.out = max(predall_holdout$screen$fold) + 1))
 ```
 
-<img src="man/figures/README-plot_globalfeatsel1-1.png" width="100%" />
-
-``` r
+```{r plot_globalfeatsel2}
 # Holdout set: Global feature selection across all screening algorithms
 #   (via SuperSelector package)
 cvSLVarImpPlot(summarizeScreen(predall_holdout$screen,
@@ -172,15 +184,13 @@ cvSLVarImpPlot(summarizeScreen(predall_holdout$screen,
                x_breaks = seq(from = 0, to = 1, length.out = max(predall_holdout$screen$fold) + 1))
 ```
 
-<img src="man/figures/README-plot_globalfeatsel2-1.png" width="100%" />
-
-``` r
+```{r performance_assessment}
 ll_assessed <- assess_predictions(predall_holdout$predict$library.predict,
                                   Y_holdout,
                                   "'Local' learner predictions (holdout set)")
 ```
 
-``` r
+```{r plot_roc, fig.height=6}
 # Holdout set: Receiver operating characteristic curve
 
 library(ggplot2)
@@ -200,9 +210,7 @@ ggplot(data = ll_assessed$roc, aes(x = fpr, y = tpr, color = method)) +
           plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
 ```
 
-<img src="man/figures/README-plot_roc-1.png" width="100%" />
-
-``` r
+```{r tab_coef_est, results='asis'}
 # Holdout set: Example Local Regression Model Coefficient Estimates for a single observation
 
 library(gtsummary)
@@ -221,10 +229,3 @@ local_coef <- tbl_regression(local_mod, exponentiate = TRUE, intercept = TRUE) %
 
 as_kable_extra(local_coef, format = "pipe")
 ```
-
-| Characteristic |  OR  |  SE   |   95% CI   |
-|:---------------|:----:|:-----:|:----------:|
-| (Intercept)    | 0.06 | 0.968 | 0.01, 0.34 |
-| GCS.15         | 0.09 | 0.641 | 0.02, 0.30 |
-| Age            | 1.07 | 0.029 | 1.01, 1.14 |
-| PrehospOCY     | 0.60 | 0.327 | 0.30, 1.09 |
