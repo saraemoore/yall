@@ -69,7 +69,7 @@ nCVSLFeatSelFolds <- 5
 
 family <- binomial()
 
-my_seed <- 54321
+my_seed <- 98765
 n_obs <- 2000
 
 set.seed(my_seed)
@@ -130,8 +130,7 @@ predSummary %>% slice_min(cvRiskSum, with_ties = TRUE) %>% knitr::kable()
 
 | norm | kernel  | window | screener             | predictor | combo\_method | selector |   k | cvRiskSum |
 |:-----|:--------|-------:|:---------------------|:----------|:--------------|:---------|----:|----------:|
-| L1   | tricube |    0.3 | screen.corRank3.wgtd | SL.glm    | NNloglik      | cutoff.k |   3 |  131.8541 |
-| L1   | tricube |    0.3 | screen.corRank6.wgtd | SL.glm    | NNloglik      | cutoff.k |   3 |  131.8541 |
+| L2   | uniform |    0.3 | screen.corRank3.wgtd | SL.glm    | NNloglik      | cutoff.k |   6 |  134.8602 |
 
 ``` r
 # subset predictions to only those with the settings which resulted in the min cvRiskSum
@@ -225,7 +224,7 @@ as_kable_extra(local_coef, format = "pipe")
 
 | Characteristic |  OR  |  SE   |   95% CI   |
 |:---------------|:----:|:-----:|:----------:|
-| (Intercept)    | 0.02 | 2.07  | 0.00, 1.14 |
-| GCS.15         |      |       |            |
-| GCS.4\_to\_14  |      |       |            |
-| Age            | 1.00 | 0.068 | 0.88, 1.15 |
+| (Intercept)    | 0.06 | 0.968 | 0.01, 0.34 |
+| GCS.15         | 0.09 | 0.641 | 0.02, 0.30 |
+| Age            | 1.07 | 0.029 | 1.01, 1.14 |
+| PrehospOCY     | 0.60 | 0.327 | 0.30, 1.09 |

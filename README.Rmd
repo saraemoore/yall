@@ -78,7 +78,7 @@ nCVSLFeatSelFolds <- 5
 
 family <- binomial()
 
-my_seed <- 54321
+my_seed <- 98765
 n_obs <- 2000
 
 set.seed(my_seed)
@@ -164,7 +164,7 @@ predall_holdout <- predictAllYALL(newX = X_holdout,
                                   nCVSLFeatSelFolds = nCVSLFeatSelFolds)
 ```
 
-```{r plot_globalfeatsel1}
+```{r plot_globalfeatsel1, fig.height=7}
 # Holdout set: Global feature selection by screening algorithm
 #   (via SuperSelector package)
 cvSLVarImpPlot2(summarizeScreen(predall_holdout$screen,
@@ -190,7 +190,7 @@ ll_assessed <- assess_predictions(predall_holdout$predict$library.predict,
                                   "'Local' learner predictions (holdout set)")
 ```
 
-```{r plot_roc}
+```{r plot_roc, fig.height=6}
 # Holdout set: Receiver operating characteristic curve
 
 library(ggplot2)
