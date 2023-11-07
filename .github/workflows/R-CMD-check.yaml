@@ -29,11 +29,10 @@ jobs:
 
       - uses: r-lib/actions/setup-pandoc@v2
 
-      - name: lme4-deps
+      - name: manually-install-lme4
         if: ${{ matrix.config.os == 'ubuntu-latest' }}
         run: |
-          sudo apt-get install -y make
-          sudo apt-get install -y cmake
+          sudo apt install r-cran-lme4
 
       - uses: r-lib/actions/setup-r@v2
         with:
