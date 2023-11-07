@@ -12,8 +12,9 @@ knitr::opts_chunk$set(
   message = FALSE
 )
 options(repos = c(RSPM = "https://packagemanager.posit.co/cran/latest",
-				  CRAN = "https://cloud.r-project.org/"),
-		install.packages.check.source = "no")
+				          CRAN = "https://cloud.r-project.org/"),
+        install.packages.check.source = "no",
+        pkgType = "mac.binary")
 ```
 
 # Yet Another Local Learner (YALL)
@@ -31,14 +32,17 @@ The `yall` package implements a local learning algorithm, building upon the ense
 The `yall` package is currently only available via GitHub. To install:
 
 ```{r install_pkg, results='hide'}
-remotes::install_github("saraemoore/yall")
+# remotes::install_github("saraemoore/yall")
+devtools::install("~/Documents/yall")
 ```
 
 ## Examples
 
-```{r}
+```{r load_and_set}
 library(yall)
 library(SuperSelector)  # sim_proppr_data, factor_to_indicator
+library(SuperLearner)   # screening and prediction library algorithm functions
+library(FSelector)      # screening library algorithm functions
 library(tidyr)          # expand_grid
 library(dplyr)          # %>%, slice_min, select, left_join, arrange
 library(caret)          # createDataPartition
@@ -60,19 +64,17 @@ libraryMetaFeatSel <- data.frame(selector = c("cutoff.biggest.diff", "cutoff.k",
 rownames(libraryMetaFeatSel) <- c("biggest diff", "top3", "top6")
 
 libraryNeighborWeights <- tidyr::expand_grid(norm = c("L1", "L2"),
-                                             kernel = c("uniform", "tricube", "epanechnikov"),
-                                             window = c(0.1, 0.2, 0.3)) %>%
+                                             kernel = c("uniform", "tricube"),
+                                             window = c(0.15, 0.3)) %>%
                             as.data.frame(stringsAsFactors = FALSE)
 
 librarySimplePred <- list(
   c("SL.glm.mean", "All"),
   c("SL.glm", "screen.corRank3.wgtd"),
-  c("SL.glm.interaction", "screen.corRank3.wgtd"),
-  c("SL.glm", "screen.corRank6.wgtd"),
-  c("SL.glm.interaction", "screen.corRank6.wgtd")
+  c("SL.glm", "screen.corRank6.wgtd")
 )
 
-methodCVSLFeatSel <- c("method.NNloglik", "method.NNLS")
+methodCVSLFeatSel <- c("method.NNloglik")
 
 nCVSLFeatSelFolds <- 5
 
@@ -81,17 +83,17 @@ family <- binomial()
 my_seed <- 54321
 n_obs <- 2000
 
-################################################################################
-
 set.seed(my_seed)
+```
 
+```{r sim_data}
 proppr_sim <- SuperSelector::sim_proppr_data(n_obs = n_obs, rnd_seed = my_seed)
 
 Y_full <- as.numeric(proppr_sim$Y)
 X_full <- bind_cols(proppr_sim, as.data.frame(SuperSelector::factor_to_indicator("GCS", proppr_sim)))
 X_full <- subset(X_full, select = -c(ID, Y, GCS))
 
-# 75/25 [tuning] vs [validation] split
+# 75/25 [tuning] vs [holdout] split
 valid_prop <- 0.25
 holdoutIdx <- caret::createDataPartition(Y_full, times = 1, p = valid_prop)[[1]]
 X_holdout <- X_full[holdoutIdx,]
@@ -102,9 +104,13 @@ Y_tuning <- Y_full[-holdoutIdx]
 # within the tuning set, make CV folds
 nFolds <- 5
 cvFoldInfo <- origami::make_folds(X_tuning, V = nFolds)
+```
 
+```{r predict_tuning}
 plan(sequential)
 
+# expect this function to run for several minutes for this simulated dataset,
+#   particularly when executing sequentially
 predres <- origami::cross_validate(
   cv_fun = trainYALL,
   folds = cvFoldInfo,
@@ -115,6 +121,7 @@ predres <- origami::cross_validate(
                              selector.library = libraryMetaFeatSel, nFolds = nCVSLFeatSelFolds),
   neighbor_control = list(library = libraryNeighborWeights),
   predict_control = list(SL.library = librarySimplePred, trimLogit = 0.001),
+  save_fit_library = FALSE,
   save_dist = FALSE,
   # cross_validate() uses future by default to process each fold in parallel.
   #   future.packages specifies which packages to attach in the environment within each fold.
@@ -122,24 +129,34 @@ predres <- origami::cross_validate(
   # .combine_control tells cross_validate() how to combine list elements from each fold's results
   .combine_control = list(combiners = list(predict = combiner_rbind, screen = combiner_rbind,
                           screen_full = combiner_c, screen_which = combiner_rbind))
-  )
+)
+```
 
+```{r summarize_tuning1, results='asis'}
 # one row per unique combo of tuning parameter settings
 predSummary <- summarizeYALL(predres$predict)
 # minimum cvRiskSum (note that there may be ties):
-predSummary %>% slice_min(cvRiskSum, with_ties = TRUE)
+predSummary %>% slice_min(cvRiskSum, with_ties = TRUE) %>% knitr::kable()
+```
 
+```{r subset_to_best_combo}
 # subset predictions to only those with the settings which resulted in the min cvRiskSum
 best_res_row <- predSummary %>%
   slice_min(cvRiskSum, with_ties = FALSE) %>%
   select(-cvRiskSum) 
+```
+
+```{r summarize_tuning2, eval=FALSE, include=FALSE}
 best_res <- best_res_row %>%
   left_join(predres$predict) %>%
   arrange(obsNum)
 best_res$Yobs <- Y_tuning
-best_res
+best_res %>% select(obsNum, norm, kernel, window, screener, predictor, combo_method, selector, k, keep_names, windowFmtd, keep2, library.predict, Yobs) %>% head()
 
-# use the optimal parameters selected using the tuning set to predict outcomes in the validation set
+```
+
+```{r predict_holdout}
+# use the optimal parameters selected using the tuning set to predict outcomes in the holdout set
 predall_holdout <- predictAllYALL(newX = X_holdout,
                                   y_all = Y_tuning,
                                   x_all = X_tuning,
@@ -149,8 +166,8 @@ predall_holdout <- predictAllYALL(newX = X_holdout,
                                   nCVSLFeatSelFolds = nCVSLFeatSelFolds)
 ```
 
-```{r}
-# Validation set: Global feature selection by screening algorithm
+```{r plot_globalfeatsel1}
+# Holdout set: Global feature selection by screening algorithm
 #   (via SuperSelector package)
 cvSLVarImpPlot2(summarizeScreen(predall_holdout$screen,
                                 groupCols = c("method", "screener")),
@@ -158,8 +175,8 @@ cvSLVarImpPlot2(summarizeScreen(predall_holdout$screen,
                 y_breaks = seq(from = 0, to = 1, length.out = max(predall_holdout$screen$fold) + 1))
 ```
 
-```{r}
-# Validation set: Global feature selection across all screening algorithms
+```{r plot_globalfeatsel2}
+# Holdout set: Global feature selection across all screening algorithms
 #   (via SuperSelector package)
 cvSLVarImpPlot(summarizeScreen(predall_holdout$screen,
                                groupCols = "method"),
@@ -169,22 +186,18 @@ cvSLVarImpPlot(summarizeScreen(predall_holdout$screen,
                x_breaks = seq(from = 0, to = 1, length.out = max(predall_holdout$screen$fold) + 1))
 ```
 
-```{r}
-# tidy(predall_holdout$predict$fitLibrary[[1]])
-# predall_holdout$predict$kernel_weights[[30]] %>% as.vector()
-# unname(predall_holdout$predict$library.predict) - Y_holdout
-
+```{r performance_assessment}
 ll_assessed <- assess_predictions(predall_holdout$predict$library.predict,
                                   Y_holdout,
                                   "'Local' learner predictions (holdout set)")
 ```
 
-```{r}
-# Validation set: Receiver operating characteristic curve
+```{r plot_roc}
+# Holdout set: Receiver operating characteristic curve
 
 library(ggplot2)
 
-ggplot(data = ll_assessed$roc, aes(x = fpr, y = tpr)) +
+ggplot(data = ll_assessed$roc, aes(x = fpr, y = tpr, color = method)) +
     geom_line(size = 1, alpha = 0.9) +
     geom_segment(data = data.frame(x = 0, y = 0),
         aes(x = x, y = y, xend = x + 1, yend = y + 1),
@@ -193,18 +206,22 @@ ggplot(data = ll_assessed$roc, aes(x = fpr, y = tpr)) +
       labels = scales::percent, expand = c(0,0)) +
     scale_y_continuous("True positive rate (Sensitivity)", limits = c(0, 1),
       labels = scales::percent, expand = c(0,0)) +
-    theme_classic(base_size = 14)
+    scale_color_manual(NULL, values = "grey20") +
+    theme_classic(base_size = 14) +
+    theme(legend.position = c(0.65, 0.25),
+          plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm"))
 ```
 
-```{r}
-# Validation set: Example Local Regression Model Coefficient Estimates for a single observation
+```{r tab_coef_est, results='asis'}
+# Holdout set: Example Local Regression Model Coefficient Estimates for a single observation
 
 library(gtsummary)
 library(kableExtra)
 
-holdout_obs_num <- 186
 local_mod <- predall_holdout$predict %>%
-                filter(obsNum==as.character(holdout_obs_num)) %>%
+                bind_cols(y_observed = Y_holdout) %>%
+                mutate(resid = abs(y_observed - library.predict)) %>%
+                slice_min(resid) %>%
                 pull(fitLibrary) %>%
                 `[[`(1)
 
@@ -212,5 +229,5 @@ local_coef <- tbl_regression(local_mod, exponentiate = TRUE, intercept = TRUE) %
                   modify_column_hide(columns = p.value) %>%
                   modify_column_unhide(columns = std.error)
 
-as_kable_extra(local_coef)
+as_kable_extra(local_coef, format = "pipe")
 ```
