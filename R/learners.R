@@ -131,7 +131,7 @@ trainYALLfold <- function(y_all, x_all, fold_num, trainRows, validRows, family,
 #' \code{FALSE}.
 #' @param save_fit_library A boolean passed to \code{\link{GridLearner}} to
 #' indicate whether to retain the fit object for each algorithm in the library
-#' in the returned result. Defaults to \code{TRUE}.
+#' in the returned result. Defaults to \code{FALSE} due to memory constraints.
 #' @param model_keep If \code{save_fit_library} is true, a character vector
 #' indicating which, if any, "disposable" elements of the model fit objects
 #' to retain. Defaults to \code{"everything"}. See \code{\link[strip]{strip}}
@@ -144,7 +144,7 @@ trainYALLfold <- function(y_all, x_all, fold_num, trainRows, validRows, family,
 #' @importFrom origami training validation
 #' @export
 trainYALL <- function(fold, y_all, x_all, family, cvSLfeatsel_control, neighbor_control, predict_control,
-                      save_dist = FALSE, save_fit_library = TRUE, model_keep = c("everything"), verbose = FALSE) {
+                      save_dist = FALSE, save_fit_library = FALSE, model_keep = c("everything"), verbose = FALSE) {
 
     trainRows <- origami::training()
     validRows <- origami::validation()

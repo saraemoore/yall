@@ -13,7 +13,7 @@ trainYALL(
   neighbor_control,
   predict_control,
   save_dist = FALSE,
-  save_fit_library = TRUE,
+  save_fit_library = FALSE,
   model_keep = c("everything"),
   verbose = FALSE
 )
@@ -49,7 +49,7 @@ in the result. Passed to \code{\link{distKernelWeights}}. Defaults to
 
 \item{save_fit_library}{A boolean passed to \code{\link{GridLearner}} to
 indicate whether to retain the fit object for each algorithm in the library
-in the returned result. Defaults to \code{TRUE}.}
+in the returned result. Defaults to \code{FALSE} due to memory constraints.}
 
 \item{model_keep}{If \code{save_fit_library} is true, a character vector
 indicating which, if any, "disposable" elements of the model fit objects
